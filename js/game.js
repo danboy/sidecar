@@ -1,34 +1,92 @@
-var Characters = [
-  {name: 'test', position: {start: 200}}
-, {name: 'boingo', position: {start: 800}}
-];
+/*******************
+ *
+ *  Highly experimental and hacky game engine.
+ *  ToDO
+ *
+ *  1. Make Tiles act as platform on collision
+ *  2. Move gameboard logic and game movement object to their own objects
+ *  3. Move actual movement to physics engine
+ *  4. Resolve collisions and create player "life"
+ *  5. Point system
+ *  6. Create parralax scroll an backgrounds.
+ *
+ * ********************/
 
 var Game = function(board, options){
   this.collision = new Collision();
-  this.physics = new Physics();
+  this.physics = new Physics({
+    jump: 10
+  });
   this.options = JS.merge({
     players: ['main']
+  , life: 3
   , speed: .25
   , keys: []
   , framerate: 60
   , initialJumpForce: 3
   , gravity: 10
-  }, options)
-  this.characters = [];
+  }, options);
   this.createWorld(board, options);
 }
 
 Game.prototype = {
   update: function(){
     this.movePlayers();
-    this.isFalling(this.player);
-    if(this.isJumping){
-      this.doJump(this.player);
-    }
+    (this.isJumping) ? this.doJump(this.player) : this.isFalling(this.player);
     if(this.isMoving){
       this.move(this.player, this.isMoving);
     }
   }
+, createWorld: function(board){
+    this.board = document.getElementById(board);
+    JS.addClass(this.board, 'gameBoard');
+    this.setGameVariables();
+    this.addPlayers();
+    this.addTiles();
+    this.addCharacters();
+    this.start()
+  }
+, setGameVariables: function(){
+    this.life = this.options.life;
+    this.tiles = [];
+    this.players = [];
+    this.characters = [];
+  }
+, isFalling: function(obj){
+    this.tileCollision(obj);
+    position = JS.getPosition(obj);
+    parentPosition = JS.getPosition(obj.parentNode)
+    var y = parentPosition.bottom-position.bottom; 
+    if(y > 1){
+      obj.style.bottom = this.physics.fall(parseInt(obj.style.bottom), obj)+'px';
+    }else{
+      obj.style.bottom = '0px';
+    }
+  }
+, tileCollision: function(obj){
+    this.tiles.forEach(function(tile){
+      tile = JS.getPosition(tile);
+      this.collision.detectDirection(JS.getPosition(obj), tile, function(collision, direction){
+        if(collision){
+          this.resolveCollision[direction](obj, collision);
+        }
+      }.bind(this));
+    }.bind(this));
+  }
+, resolveCollision: [
+    function(obj, distance){
+      obj.style.left = (parseInt(obj.style.left)+distance)+'px';
+    }
+  , function(obj, distance){
+      obj.style.left = (parseInt(obj.style.left)+distance)-'px';
+    }
+  , function(obj, distance){
+      obj.style.bottom = (parseInt(obj.style.bottom)+distance)+'px';
+    }
+  , function(obj, distance){
+      obj.style.bottom = (parseInt(obj.style.bottom)-distance)+'px';
+    }
+  ]
 , start: function(){
     var drawFrame = this.getAnimateFrame();
     var self = this;
@@ -46,31 +104,38 @@ Game.prototype = {
             window.msRequestAnimationFrame     ||
             null ;
   }
-, stop: function(){
-    clearInterval(this._timer);
-    this._timer = false;
+, addPlayers: function(){
+    Players.forEach(function(player){
+      player = this.addPlayer(player);
+      this.players.push(player);
+    }.bind(this));
   }
-, addPlayer: function(id){
+, addPlayer: function(attr){
     var player = this.addObject({'class': 'player'})
-    this.assignKey(106, this.doJump);
-    this.assignKey(37,  function(e){this.left(player)}.bind(this));
-    this.assignKey(37, 'keyup', function(){this.stopMoving()}.bind(this));
-    this.assignKey(38,  function(e){this.jump(player)}.bind(this));
-    this.assignKey(39, 'keyup', function(){this.stopMoving()}.bind(this));
-    this.assignKey(39,  function(e){this.right(player)}.bind(this));
-    this.assignKey(40,  function(e){this.down(player)}.bind(this));
+    this.assignKey(attr.keys.left,  function(e){this.left(player)}.bind(this));
+    this.assignKey(attr.keys.left, 'keyup', function(){this.stopMoving()}.bind(this));
+    this.assignKey(attr.keys.up,  function(e){this.jump(player)}.bind(this));
+    this.assignKey(attr.keys.right, 'keyup', function(){this.stopMoving()}.bind(this));
+    this.assignKey(attr.keys.right,  function(e){this.right(player)}.bind(this));
+    player.style.bottom = '300px';
     this.player = player;
   }
-, isFalling: function(character){
-    position = this.getPosition(character);
-    parentPosition = this.getPosition(character.parentNode)
-    var y = parentPosition.bottom-position.bottom; 
-    if(y > 1){
-      this.down(character);
-    }else{
-      character.style.bottom = '0px';
-    }
-
+, addTiles: function(){
+    Tiles.forEach(function(tile){
+      var tile = this.addTile({class: 'tile', left: parseInt(tile.position.left), bottom: tile.position.bottom});
+      this.tiles.push(tile);
+    }.bind(this));
+  }
+, addTile: function(tile){
+    var obj = this.addObject(tile);
+    obj.style.bottom = tile.bottom;
+    return obj;
+  }
+, addCharacters: function(){
+    Characters.forEach(function(character){
+      var character = this.addObject({class: 'character', left: character.position.start});
+      this.characters.push(character);
+    }.bind(this));
   }
 , addObject: function(options){
     var obj = JS.create(options);
@@ -81,21 +146,6 @@ Game.prototype = {
     if(options.text){obj.innerHTML = options.text;};
     obj.style.left = left || this.getLeftValue(obj)+'px';
     return obj;
-  }
-, createWorld: function(board){
-    this.board = document.getElementById(board);
-    this.board.className = this.board.className+' gameBoard';
-    this.options.players.forEach(function(){
-      this.addPlayer(this);
-    }.bind(this));
-    this.addCharacters();
-    this.start()
-  }
-, addCharacters: function(){
-    Characters.forEach(function(character){
-      var character = this.addObject({class: 'character', left: character.position.start});
-      this.characters.push(character);
-    }.bind(this));
   }
 , assignKey: function(keyCode, event, cb){
     if(typeof(event) == 'function'){
@@ -128,24 +178,22 @@ Game.prototype = {
     var num = position.replace('px','');
     return (parseInt(num)+velocity)+'px';
   }
-, getPosition: function(obj){
-   var position = obj.getBoundingClientRect();
-   return {top: position.top, right: position.right, bottom: position.bottom, left: position.left, height: obj.offsetHeight, width: obj.offsetWidth} 
-  }
 , getLeftValue: function(object){
-    var obj = this.getPosition(object);
-    var container = this.getPosition(object.parentNode);
+    var obj = JS.getPosition(object);
+    var container = JS.getPosition(object.parentNode);
     return obj.left-container.left;
   }
 , movePlayers: function(){
     this.characters.forEach(function(character){
-      if(this.collision.detect(this.getPosition(character), this.getPosition(this.player))){
-        this.stop();
-        this.destroyPlayer(this.player);
+      if(this.collision.detect(JS.getPosition(character), JS.getPosition(this.player))){  
+        this.removeLife();
       }else{
         this.moveLeft(character)
       };
     }.bind(this));
+  }
+, removeLife: function(player){
+    return (this.life > 1) ? this.life-- : this.gameOver();
   }
 , right: function(){
     this.isMoving = 4;
@@ -159,24 +207,17 @@ Game.prototype = {
     this.isMoving = false;
     JS.removeClass(this.player, 'moving');
   }
-, up: function(player){
-    this.moveVertical(player, 5)
-  }
-, down: function(player){
-    this.moveVertical(player, -5)
-  }
 , jump: function(){
     this.isJumping = true;
   }
 , doJump: function(obj){
     obj.style.bottom = this.physics.jump(parseInt(obj.style.bottom), obj)+'px';
+    
     if(obj.style.bottom == '0px'){
       this.isJumping= false;
     }
   }
-, destroyPlayer: function(object){
-    //window.removeEventListener('keydown', this.options.keys[37]);
-    //window.removeEventListener('keydown', this.options.keys[39]);
+, gameOver: function(object){
     this.addObject({type: 'h1', text: 'Game over', left: 300});     
   }
 };

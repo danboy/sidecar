@@ -22,4 +22,16 @@ var JS = {
     regex = RegExp("(?:^|\\s)" + className + "(?!\\S)", "g");
     object.className = object.className.replace(regex , '' );
   }
+, getPosition: function(obj){
+   var position = obj.getBoundingClientRect();
+   var data =  {
+      top: obj.offsetTop
+    , right: position.right
+    , bottom: (obj.parentNode.offsetHeight - obj.offsetTop)
+    , left: position.left, height: obj.offsetHeight
+    , width: obj.offsetWidth
+    , parentTop: obj.parentNode.offsetHeight
+   };
+   return(data);
+  }
 }
