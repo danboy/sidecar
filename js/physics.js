@@ -1,4 +1,5 @@
 var Physics = function(options){
+  this.collision = new Collision();
   this.options = JS.merge({
     jump: 10
   , fall: -1
@@ -9,27 +10,30 @@ var Physics = function(options){
 };
 
 Physics.prototype = {
-  fall: function(velocity, player){
-    this.createObject(player,'fall');
-    var velocity = this.doVelocity(velocity, this.options.objects[player], 'fall');
-    return this.checkVelocity(velocity, function(obj){
-      this.options.objects[player].jump = this.options.jump;
-      return 0;
+  fall: function(obj, baseline){
+    this.createObject(obj,'fall');
+    return this.checkVelocity(obj, baseline, 'fall', function(obj, baseline){
+      this.options.objects[obj].fall = this.options.fall;
+      return baseline;
     }.bind(this));
   }
-, run: function(velocity, player){
-    
+, move: function(obj, velocity){
+    obj.style.left = (parseInt(obj.style.left) +  velocity) + 'px';
   }
-, jump: function(velocity, player){
-    this.createObject(player,'jump');
-    var velocity = this.doVelocity(velocity, this.options.objects[player], 'jump');
-    return this.checkVelocity(velocity, function(obj){
-      this.options.objects[player].jump = this.options.jump;
-      return 0;
+, jump: function(obj, baseline){
+    this.createObject(obj,'jump');
+    return this.checkVelocity(obj, baseline, 'jump', function(obj, baseline){
+      this.options.objects[obj].jump = this.options.jump;
+      return baseline;
     }.bind(this));
   }
-, checkVelocity: function(velocity, action){
-    return (velocity <= 0) ? action(velocity) : velocity;
+, resetJump: function(obj){
+    this.createObject(obj,'jump');
+    this.options.objects[obj].jump = this.options.jump; 
+  }
+, checkVelocity: function(obj, baseline, type, action){
+    var velocity = this.doVelocity(parseInt(obj.style.bottom), this.options.objects[obj], type);
+    return (velocity <= baseline) ? action(obj, baseline) : velocity;
   }
 , doVelocity: function(velocity, obj, action){
     obj[action] -= this.options.gravity;
@@ -37,10 +41,12 @@ Physics.prototype = {
     return velocity;
   }
 , createObject: function(object, action, cb){
-    var obj = false;
-    if(this.options.objects[object] == undefined){
+    var obj = this.options.objects[object];
+    if(obj == undefined){
       obj = this.options.objects[object] = object;
-      obj[action] = this.options[action]
+    }
+    if(obj[action] == undefined){
+      obj[action] = this.options[action];
     }
     return obj;
   }

@@ -13,29 +13,22 @@
  * ********************/
 
 var Game = function(board, options){
-  this.collision = new Collision();
   this.physics = new Physics({
     jump: 10
   });
   this.options = JS.merge({
-    players: ['main']
-  , life: 3
-  , speed: .25
+    life: 3
   , keys: []
-  , framerate: 60
-  , initialJumpForce: 3
-  , gravity: 10
   }, options);
   this.createWorld(board, options);
 }
 
 Game.prototype = {
   update: function(){
-    this.movePlayers();
-    (this.isJumping) ? this.doJump(this.player) : this.isFalling(this.player);
-    if(this.isMoving){
-      this.move(this.player, this.isMoving);
-    }
+    this.players.forEach(function(obj){
+      this.physics.move(obj, this.isMoving);
+      (this.isJumping) ? this.doJump(obj) : this.isFalling(obj);
+    }.bind(this));
   }
 , createWorld: function(board){
     this.board = document.getElementById(board);
@@ -53,40 +46,29 @@ Game.prototype = {
     this.characters = [];
   }
 , isFalling: function(obj){
-    this.tileCollision(obj);
-    position = JS.getPosition(obj);
-    parentPosition = JS.getPosition(obj.parentNode)
-    var y = parentPosition.bottom-position.bottom; 
-    if(y > 1){
-      obj.style.bottom = this.physics.fall(parseInt(obj.style.bottom), obj)+'px';
-    }else{
-      obj.style.bottom = '0px';
-    }
-  }
-, tileCollision: function(obj){
-    this.tiles.forEach(function(tile){
-      tile = JS.getPosition(tile);
-      this.collision.detectDirection(JS.getPosition(obj), tile, function(collision, direction){
-        if(collision){
-          this.resolveCollision[direction](obj, collision);
-        }
-      }.bind(this));
+    this.isColliding(obj, function(obj, baseline){
+      obj.style.bottom = this.physics.fall(obj, baseline)+'px';
     }.bind(this));
   }
-, resolveCollision: [
-    function(obj, distance){
-      obj.style.left = (parseInt(obj.style.left)+distance)+'px';
-    }
-  , function(obj, distance){
-      obj.style.left = (parseInt(obj.style.left)+distance)-'px';
-    }
-  , function(obj, distance){
-      obj.style.bottom = (parseInt(obj.style.bottom)+distance)+'px';
-    }
-  , function(obj, distance){
-      obj.style.bottom = (parseInt(obj.style.bottom)-distance)+'px';
-    }
-  ]
+, isColliding: function(obj, cb){
+    obj.baseline = -60;
+    this.tiles.forEach(function(tile, index){
+      this.physics.collision.direction(obj,tile, function(distance, direction, tile){
+        switch(direction){
+          case 'bottom':
+          obj.baseline = tile.top;
+          break;
+          case 'left':
+          obj.style.left = (tile.left-20)+'px';
+          console.log('TILE',tile.left);
+          break;
+        }
+      })
+      if(index == (this.tiles.length-1)){
+        cb(obj, obj.baseline);
+      }
+    }.bind(this));
+  }
 , start: function(){
     var drawFrame = this.getAnimateFrame();
     var self = this;
@@ -112,18 +94,20 @@ Game.prototype = {
   }
 , addPlayer: function(attr){
     var player = this.addObject({'class': 'player'})
-    this.assignKey(attr.keys.left,  function(e){this.left(player)}.bind(this));
-    this.assignKey(attr.keys.left, 'keyup', function(){this.stopMoving()}.bind(this));
-    this.assignKey(attr.keys.up,  function(e){this.jump(player)}.bind(this));
-    this.assignKey(attr.keys.right, 'keyup', function(){this.stopMoving()}.bind(this));
-    this.assignKey(attr.keys.right,  function(e){this.right(player)}.bind(this));
     player.style.bottom = '300px';
-    this.player = player;
+    this.assignKey(attr.keys.right, 'keyup', function(){this.stopMoving()}.bind(this));
+    this.assignKey(attr.keys.right,  function(e){this.moveRight(player)}.bind(this));
+    this.assignKey(attr.keys.left, 'keyup', function(){this.stopMoving()}.bind(this));
+    this.assignKey(attr.keys.left,  function(e){this.moveLeft(player)}.bind(this));
+    this.assignKey(attr.keys.up,  function(e){this.jump(player)}.bind(this));
+    return this.player = player;
   }
 , addTiles: function(){
-    Tiles.forEach(function(tile){
-      var tile = this.addTile({class: 'tile', left: parseInt(tile.position.left), bottom: tile.position.bottom});
-      this.tiles.push(tile);
+    Tiles.forEach(function(tyle){
+      var tile = this.addTile({class: 'tile', left: parseInt(tyle.position.left), bottom: tyle.position.bottom});
+      if(tyle.type == 0){
+        this.tiles.push(tile);
+      }
     }.bind(this));
   }
 , addTile: function(tile){
@@ -159,47 +143,16 @@ Game.prototype = {
     };
     window.addEventListener(event, this.options.keys[keyCode]);
   }
-, move: function(object, speed){
-    object.style.left = this.increment(object.style.left, speed);
-  }
-, moveRight: function(object){
-    object.style.left = this.increment(object.style.left, this.options.speed);
-  }
-, moveLeft: function(object){
-    if(parseInt(object.style.left.replace('px','')) > 0){
-      object.style.left = this.increment(object.style.left, -this.options.speed);
-    }
-  }
-, moveVertical: function(object, speed){
-    object.style.bottom = this.increment(object.style.bottom, speed);
-  }
-, increment: function(position, velocity){
-    var position = position || "1";
-    var num = position.replace('px','');
-    return (parseInt(num)+velocity)+'px';
-  }
 , getLeftValue: function(object){
     var obj = JS.getPosition(object);
     var container = JS.getPosition(object.parentNode);
     return obj.left-container.left;
   }
-, movePlayers: function(){
-    this.characters.forEach(function(character){
-      if(this.collision.detect(JS.getPosition(character), JS.getPosition(this.player))){  
-        this.removeLife();
-      }else{
-        this.moveLeft(character)
-      };
-    }.bind(this));
-  }
-, removeLife: function(player){
-    return (this.life > 1) ? this.life-- : this.gameOver();
-  }
-, right: function(){
+, moveRight: function(){
     this.isMoving = 4;
     JS.addClass(this.player, 'moving');
   }
-, left: function(){
+, moveLeft: function(){
     this.isMoving = -4;
     JS.addClass(this.player, 'moving');
   }
@@ -211,14 +164,25 @@ Game.prototype = {
     this.isJumping = true;
   }
 , doJump: function(obj){
-    obj.style.bottom = this.physics.jump(parseInt(obj.style.bottom), obj)+'px';
-    
-    if(obj.style.bottom == '0px'){
-      this.isJumping= false;
-    }
+    this.isJumpColliding(obj, function(obj, baseline){
+      var bottom = this.physics.jump(obj, baseline);
+      obj.style.bottom = bottom+'px';
+      if(bottom <= obj.baseline) this.isJumping = false;
+    }.bind(this));
   }
-, gameOver: function(object){
-    this.addObject({type: 'h1', text: 'Game over', left: 300});     
+, isJumpColliding: function(obj, cb){
+    obj.baseline = 0;
+    this.tiles.forEach(function(tile, index){
+      this.physics.collision.direction(obj,tile, function(distance, direction, tile){
+        if(direction ==  'bottom'){
+          obj.baseline = tile.top;
+          this.isJumping = false;
+        }
+      })
+      if(index == (this.tiles.length-1)){
+        cb(obj, obj.baseline);
+      }
+    }.bind(this));
   }
 };
 var game = new Game('window');

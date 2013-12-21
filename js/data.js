@@ -4,14 +4,31 @@ var Characters = [
 ];
 
 var Tiles = [
-  {position: {bottom: '100px', left: '20px'}}
-, {position: {bottom: '100px', left: '40px'}}
-, {position: {bottom: '0px', left: '240px'}}
-, {position: {bottom: '20px', left: '260px'}}
-, {position: {bottom: '20px', left: '280px'}}
-, {position: {bottom: '40px', left: '340px'}}
-, {position: {bottom: '40px', left: '360px'}}
-, {position: {bottom: '40px', left: '380px'}}
+  {type: 0, position: {bottom: '100px', left: '20px'}}
+, {type: 0, position: {bottom: '0px', left: '0px'}}
+, {type: 0, position: {bottom: '0px', left: '20px'}}
+, {type: 0, position: {bottom: '0px', left: '40px'}}
+, {type: 0, position: {bottom: '0px', left: '60px'}}
+, {type: 0, position: {bottom: '0px', left: '80px'}}
+, {type: 0, position: {bottom: '0px', left: '100px'}}
+, {type: 0, position: {bottom: '0px', left: '120px'}}
+, {type: 0, position: {bottom: '100px', left: '40px'}}
+, {type: 0, position: {bottom: '120px', left: '120px'}}
+, {type: 0, position: {bottom: '0px', left: '180px'}}
+, {type: 0, position: {bottom: '0px', left: '200px'}}
+, {type: 0, position: {bottom: '0px', left: '220px'}}
+, {type: 0, position: {bottom: '0px', left: '240px'}}
+, {type: 0, position: {bottom: '0px', left: '260px'}}
+, {type: 0, position: {bottom: '20px', left: '300px'}}
+, {type: 0, position: {bottom: '20px', left: '320px'}}
+, {type: 0, position: {bottom: '40px', left: '340px'}}
+, {type: 0, position: {bottom: '40px', left: '360px'}}
+, {type: 0, position: {bottom: '40px', left: '380px'}}
+, {type: 0, position: {bottom: '0px', left: '380px'}}
+, {type: 0, position: {bottom: '0px', left: '400px'}}
+, {type: 0, position: {bottom: '0px', left: '420px'}}
+, {type: 0, position: {bottom: '0px', left: '440px'}}
+, {type: 0, position: {bottom: '0px', left: '460px'}}
 ];
 
 var Players = [

@@ -1,9 +1,9 @@
 var JS = {
   merge: function(obj1, obj2){
-   for (var attrname in obj2) { 
-     obj1[attrname] = obj2[attrname]; 
-   }
-   return obj1;
+    for (var attrname in obj2) { 
+      obj1[attrname] = obj2[attrname]; 
+    }
+    return obj1;
   }
 , create: function(options, container){
     var attrs = this.merge({
@@ -27,11 +27,18 @@ var JS = {
    var data =  {
       top: obj.offsetTop
     , right: position.right
-    , bottom: (obj.parentNode.offsetHeight - obj.offsetTop)
-    , left: position.left, height: obj.offsetHeight
+    , bottom: (obj.parentNode.offsetHeight - obj.offsetTop) - obj.offsetHeight
+    , left: position.left
+    , height: obj.offsetHeight
     , width: obj.offsetWidth
     , parentTop: obj.parentNode.offsetHeight
    };
    return(data);
+  }
+, doOnce: function(cb){
+    if(!window.isDone){
+      cb();
+    };
+    window.isDone = true;
   }
 }
