@@ -14,13 +14,19 @@ var JS = {
     return obj;
   }
 , addClass: function(object, className){
-    if(!object.classList.contains(className)){
-      object.className += ' '+className
-    }
+    classNames = className.split(' ');
+    classNames.forEach(function(name){
+      if(!object.classList.contains(name)){
+        object.className += ' '+name
+      }
+    });
   }
 , removeClass: function(object, className){
-    regex = RegExp("(?:^|\\s)" + className + "(?!\\S)", "g");
-    object.className = object.className.replace(regex , '' );
+    classNames = className.split(' ');
+    classNames.forEach(function(name){
+      regex = RegExp("(?:^|\\s)" + name + "(?!\\S)", "g");
+      object.className = object.className.replace(regex , '' );
+    })
   }
 , getPosition: function(obj){
    var position = obj.getBoundingClientRect();

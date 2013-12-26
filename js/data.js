@@ -29,6 +29,13 @@ var Tiles = [
 , {type: 0, position: {bottom: '0px', left: '420px'}}
 , {type: 0, position: {bottom: '0px', left: '440px'}}
 , {type: 0, position: {bottom: '0px', left: '460px'}}
+, {type: 0, position: {bottom: '0px', left: '480px'}}
+, {type: 0, position: {bottom: '0px', left: '500px'}}
+, {type: 0, position: {bottom: '0px', left: '520px'}}
+, {type: 0, position: {bottom: '0px', left: '540px'}}
+, {type: 0, position: {bottom: '0px', left: '560px'}}
+, {type: 0, position: {bottom: '0px', left: '580px'}}
+, {type: 0, position: {bottom: '0px', left: '600px'}}
 ];
 
 var Players = [

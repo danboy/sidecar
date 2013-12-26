@@ -14,10 +14,11 @@
 
 var Game = function(board, options){
   this.physics = new Physics({
-    jump: 10
+    jump: 12
   });
   this.options = JS.merge({
     life: 3
+  , baseline: -200
   , keys: []
   }, options);
   this.createWorld(board, options);
@@ -28,6 +29,7 @@ Game.prototype = {
     this.players.forEach(function(obj){
       this.physics.move(obj, this.isMoving);
       (this.isJumping) ? this.doJump(obj) : this.isFalling(obj);
+      this.isDead(obj);
     }.bind(this));
   }
 , createWorld: function(board){
@@ -51,19 +53,11 @@ Game.prototype = {
     }.bind(this));
   }
 , isColliding: function(obj, cb){
-    obj.baseline = -60;
+    obj.baseline = this.options.baseline;
     this.tiles.forEach(function(tile, index){
       this.physics.collision.direction(obj,tile, function(distance, direction, tile){
-        switch(direction){
-          case 'bottom':
-          obj.baseline = tile.top;
-          break;
-          case 'left':
-          obj.style.left = (tile.left-20)+'px';
-          console.log('TILE',tile.left);
-          break;
-        }
-      })
+        this.resolveCollision(direction, obj, tile);
+      }.bind(this))
       if(index == (this.tiles.length-1)){
         cb(obj, obj.baseline);
       }
@@ -91,6 +85,14 @@ Game.prototype = {
       player = this.addPlayer(player);
       this.players.push(player);
     }.bind(this));
+  }
+, isDead: function(obj){
+    console.log('isDead?');
+    if(parseInt(obj.style.bottom) <= -10){
+      JS.doOnce(function(){
+        alert('game over');
+      });
+    }
   }
 , addPlayer: function(attr){
     var player = this.addObject({'class': 'player'})
@@ -150,15 +152,15 @@ Game.prototype = {
   }
 , moveRight: function(){
     this.isMoving = 4;
-    JS.addClass(this.player, 'moving');
+    JS.addClass(this.player, 'moving right');
   }
 , moveLeft: function(){
     this.isMoving = -4;
-    JS.addClass(this.player, 'moving');
+    JS.addClass(this.player, 'moving left');
   }
 , stopMoving: function(){
     this.isMoving = false;
-    JS.removeClass(this.player, 'moving');
+    JS.removeClass(this.player, 'moving left right');
   }
 , jump: function(){
     this.isJumping = true;
@@ -174,15 +176,32 @@ Game.prototype = {
     obj.baseline = 0;
     this.tiles.forEach(function(tile, index){
       this.physics.collision.direction(obj,tile, function(distance, direction, tile){
-        if(direction ==  'bottom'){
-          obj.baseline = tile.top;
-          this.isJumping = false;
-        }
-      })
+        this.resolveCollision(direction, obj, tile);
+      }.bind(this))
       if(index == (this.tiles.length-1)){
         cb(obj, obj.baseline);
       }
     }.bind(this));
+  }
+, resolveCollision: function(direction, obj, tile){
+    switch(direction){
+      case 'top':
+        obj.baseline = tile.top;
+        break;
+      case 'bottom':
+        obj.style.bottom = tile.bottom-parseInt(obj.style.height)+'px';
+        this.isJumping = false;
+        console.log(this);
+        break;
+      case 'left':
+        obj.style.left = tile.left-parseInt(obj.style.width)+'px';
+        this.isJumping = false;
+        break;
+      case 'right':
+        break;
+      default:
+        return;
+    }
   }
 };
 var game = new Game('window');
